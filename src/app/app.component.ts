@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { Post } from './post.model';
 import { PostService } from './services/post.service';
 
@@ -11,12 +12,18 @@ export class AppComponent implements OnInit {
 
   loadedPosts: Post[] = [];
   isFetching: boolean = false;
+  fetchError: boolean = false;
+  error = null;
+  private errorSub: Subscription;
 
   constructor(private httpService: PostService ) {}
 
   ngOnInit()
   {
     this.onFetchPosts();
+    this.errorSub = this.httpService.error.subscribe(errorMessage => {
+      this.error = errorMessage;
+    });
   }
 
   onCreatePost(postData: Post)
@@ -30,12 +37,25 @@ export class AppComponent implements OnInit {
     this.httpService.fetchPost().subscribe(
       posts => {
         this.isFetching = false;
-        this.loadedPosts = posts
+        this.loadedPosts = posts;
+      },
+      error => {
+        this.fetchError = true;
+        this.error = error.message;
+        console.log(error);
       }
     );
   }
 
   onClearPosts() {
-    // Send Http request
+    this.httpService.clearAllPosts().subscribe();
+    this.loadedPosts = [];
   }
+
+  handleError()
+  {
+    this.error = null;
+    this.isFetching = false;
+  }
+
 }

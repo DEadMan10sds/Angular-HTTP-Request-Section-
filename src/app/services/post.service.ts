@@ -1,6 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { map } from "rxjs/operators";
+import { Subject, throwError } from "rxjs";
+import { map, catchError } from "rxjs/operators";
 import { Post } from "../post.model";
 
 @Injectable({
@@ -9,7 +10,7 @@ import { Post } from "../post.model";
 export class PostService
 {
 
-  private newArrayPost: Post[] = [];
+  error = new Subject<Error>();
 
   constructor(private http: HttpClient){}
 
@@ -18,11 +19,15 @@ export class PostService
     this.http.post<{name: string}>(//Se castea para que la respuesta tenga una estructura definida
     'https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json',
     newPost
-  ).subscribe(
-    responseData => {
-      console.log(responseData);
-    }
-  );
+    ).subscribe(
+      responseData => {
+        console.log(responseData);
+      },
+      error => {
+        this.error.next(error.message);
+      }
+    );
+    this.fetchPost();
   }
 
   fetchPost()
@@ -37,12 +42,26 @@ export class PostService
             if(responseData.hasOwnProperty(key)) //Si el arreglo de responseData tiene una propiedad con el valor de 'key' (que es el iterador actual) hace push
               postsArray.push({...responseData[key], id: key})
           }
+          //console.log(postsArray);
           return postsArray;
+
+          //return this.postChanges.next(this.APIpostsArray.slice());
         }
-      )
+      ),
+      catchError(
+        errorRes => {
+          return throwError(errorRes);
+        }
+      ),
     );
 
     //return this.newArrayPost.slice();
+  }
+
+
+  clearAllPosts()
+  {
+    return this.http.delete('https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json');
   }
 
 }
