@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import {map} from 'rxjs/operators';
 import { Post } from './post.model';
+import { PostService } from './services/post.service';
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -12,46 +12,25 @@ export class AppComponent implements OnInit {
   loadedPosts: Post[] = [];
   isFetching: boolean = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private httpService: PostService ) {}
 
   ngOnInit()
   {
     this.onFetchPosts();
   }
 
-  onCreatePost(postData: Post) {
-    // Send Http request
-    this.http.post<{name: string}>(//Se castea para que la respuesta tenga una estructura definida
-      'https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json',
-      postData
-    ).subscribe(
-      responseData => {
-        console.log(responseData);
-      }
-    );
+  onCreatePost(postData: Post)
+  {
+    this.httpService.createPost(postData);
   }
 
   onFetchPosts() {
-    // Send Http request
+    //La suscripción se hace en el componente si este requiere la información, si no, se puede hacer en el servicio
     this.isFetching = true;
-    this.http.get<{[key: string]: Post}>('https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json') //Se puede 'castear' la respuesta para que tenga una estructura definida
-    .pipe(
-      map(
-        (responseData) => {//Las llaves de arreglos definen un placeholder, de esta manera decimos que habrá un atributo de nombre cambiante (que llamaremos key) de tipo string
-          const postsArray: Post[] = [];
-          for(let key in responseData)
-          {
-            if(responseData.hasOwnProperty(key)) //Si el arreglo de responseData tiene una propiedad con el valor de 'key' (que es el iterador actual) hace push
-              postsArray.push({...responseData[key], id: key})
-          }
-          return postsArray;
-        }
-      )
-    )
-    .subscribe(
-      (posts: Post[]) => {
+    this.httpService.fetchPost().subscribe(
+      posts => {
         this.isFetching = false;
-        this.loadedPosts = posts;
+        this.loadedPosts = posts
       }
     );
   }
