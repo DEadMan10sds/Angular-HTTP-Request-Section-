@@ -1,7 +1,7 @@
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpEventType, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Subject, throwError } from "rxjs";
-import { map, catchError } from "rxjs/operators";
+import { map, catchError, tap } from "rxjs/operators";
 import { Post } from "../post.model";
 
 @Injectable({
@@ -18,7 +18,11 @@ export class PostService
     //La suscripción se puede hacer en el servicio si el componente no necesita la respuesta de la solicitud en un inicio
     this.http.post<{name: string}>(//Se castea para que la respuesta tenga una estructura definida
     'https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json',
-    newPost
+    newPost,
+    {
+      //headers: new HttpHeaders({'Custom-Header': 'Hello'}),//Define headers personalizados
+      observe: 'response'
+    }
     ).subscribe(
       responseData => {
         console.log(responseData);
@@ -32,7 +36,12 @@ export class PostService
 
   fetchPost()
   {
-    return this.http.get<{[key: string]: Post}>('https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json') //Se puede 'castear' la respuesta para que tenga una estructura definida
+    return this.http.get<{[key: string]: Post}>(
+      'https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json',
+      {
+        params: new HttpParams().set('print', 'pretty'),
+      }
+      ) //Se puede 'castear' la respuesta para que tenga una estructura definida
     .pipe(
       map(
         (responseData) => {//Las llaves de arreglos definen un placeholder, de esta manera decimos que habrá un atributo de nombre cambiante (que llamaremos key) de tipo string
@@ -61,7 +70,20 @@ export class PostService
 
   clearAllPosts()
   {
-    return this.http.delete('https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json');
+    return this.http.delete(
+      'https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json',
+      {
+        observe: 'events',
+        responseType: 'text',
+      }
+    ).pipe(
+      tap(
+        event => {
+          //console.log(event);
+          if(event.type === HttpEventType.Response) console.log(event.body);
+        }
+      )
+    );
   }
 
 }
