@@ -9,7 +9,8 @@ import { Post } from './post.model';
 })
 export class AppComponent implements OnInit {
 
-  loadedPosts = [];
+  loadedPosts: Post[] = [];
+  isFetching: boolean = false;
 
   constructor(private http: HttpClient) {}
 
@@ -20,7 +21,7 @@ export class AppComponent implements OnInit {
 
   onCreatePost(postData: Post) {
     // Send Http request
-    this.http.post(
+    this.http.post<{name: string}>(//Se castea para que la respuesta tenga una estructura definida
       'https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json',
       postData
     ).subscribe(
@@ -28,15 +29,15 @@ export class AppComponent implements OnInit {
         console.log(responseData);
       }
     );
-    console.log(postData);
   }
 
   onFetchPosts() {
     // Send Http request
-    this.http.get('https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json')
+    this.isFetching = true;
+    this.http.get<{[key: string]: Post}>('https://angularmaximilianhttpsection-default-rtdb.firebaseio.com/posts.json') //Se puede 'castear' la respuesta para que tenga una estructura definida
     .pipe(
       map(
-        (responseData: {[key: string]: Post}) => {//Las llaves de arreglos definen un placeholder, de esta manera decimos que habrá un atributo de nombre cambiante (que llamaremos key) de tipo string
+        (responseData) => {//Las llaves de arreglos definen un placeholder, de esta manera decimos que habrá un atributo de nombre cambiante (que llamaremos key) de tipo string
           const postsArray: Post[] = [];
           for(let key in responseData)
           {
@@ -49,8 +50,8 @@ export class AppComponent implements OnInit {
     )
     .subscribe(
       (posts: Post[]) => {
+        this.isFetching = false;
         this.loadedPosts = posts;
-        console.log(posts)
       }
     );
   }
